@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Uploader and Text Search</title>
+
+
+<script type="text/javascript" src="index.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" src="lib/axios/dist/axios.standalone.js"></script>
+<script type="text/javascript" src="lib/CryptoJS/rollups/hmac-sha256.js"></script>
+<script type="text/javascript" src="lib/CryptoJS/rollups/sha256.js"></script>
+<script type="text/javascript" src="lib/CryptoJS/components/hmac.js"></script>
+<script type="text/javascript" src="lib/CryptoJS/components/enc-base64.js"></script>
+<script type="text/javascript" src="lib/url-template/url-template.js"></script>
+<script type="text/javascript" src="lib/apiGatewayCore/sigV4Client.js"></script>
+<script type="text/javascript" src="lib/apiGatewayCore/apiGatewayClient.js"></script>
+<script type="text/javascript" src="lib/apiGatewayCore/simpleHttpClient.js"></script>
+<script type="text/javascript" src="lib/apiGatewayCore/utils.js"></script>
+<script type="text/javascript" src="apigClient.js"></script>
+</head>
+
+<body>
+    <h2>Image Uploader</h2>
+    <label for="imageInput">
+        Select File to Upload:
+    </label>
+    <input type="file" id="imageInput" name="imageInput">
+    <br />
+    <br />
+    <label for="CustomLabels">
+        Enter your Custom Labels:
+    </label>
+    <input type="text" id="CustomLabels" name="CustomLabels">
+    <br />
+    <br />
+    <button onclick="uploadImage()">Upload Image</button>
+    <hr>
+    <h2>Search For Images</h2>
+    <input type="text" id="searchText">
+    <button onclick="searchText()">Search</button>
+
+    <div id="searchResult"></div>
+</body>
+</html>

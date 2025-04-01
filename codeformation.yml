@@ -1,0 +1,142 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  # Frontend S3 Bucket for Public Website
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: frontend-bucket-public
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Sub "arn:aws:s3:::${FrontendBucket}/*"
+
+  # Storage S3 Bucket
+  StorageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: storage-bucket-private
+
+  # IAM Role for Lambda
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - lambda.amazonaws.com
+            Action: 
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - PolicyName: LambdaPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "s3:*"
+                Resource: "*"
+
+  # Lambda Function 1
+  Lamb1:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: Lamb1
+      Runtime: python3.9
+      Handler: lamb1.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              return {
+                  "statusCode": 200,
+                  "body": "Hello from Lamb1!"
+              }
+
+  # Lambda Function 2
+  Lamb2:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: Lamb2
+      Runtime: python3.9
+      Handler: lamb2.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              return {
+                  "statusCode": 200,
+                  "body": "Hello from Lamb2!"
+              }
+
+  # API Gateway
+  APIGatewayRestAPI:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: APIGatewayForLambda
+
+  APIGatewayResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref APIGatewayRestAPI
+      ParentId: !GetAtt APIGatewayRestAPI.RootResourceId
+      PathPart: "test"
+
+  APIGatewayMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref APIGatewayRestAPI
+      ResourceId: !Ref APIGatewayResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Lamb1.Arn}/invocations
+
+  APIGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref APIGatewayRestAPI
+      StageName: prod
+    DependsOn: 
+      - APIGatewayMethod
+
+  LambdaPermissionForAPIGateway:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !GetAtt Lamb1.Arn
+      Principal: "apigateway.amazonaws.com"
+
+Outputs:
+  FrontendBucketURL:
+    Description: Public URL of the frontend S3 bucket
+    Value: !GetAtt FrontendBucket.WebsiteURL
+
+  StorageBucketName:
+    Description: Name of the storage S3 bucket
+    Value: !Ref StorageBucket
+
+  APIGatewayURL:
+    Description: URL for API Gateway
+    Value: !Sub "https://${APIGatewayRestAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/test"

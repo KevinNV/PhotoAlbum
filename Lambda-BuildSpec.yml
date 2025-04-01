@@ -1,0 +1,33 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+    commands:
+      - echo "Using Python 3.9 runtime..."
+  build:
+    commands:
+      - echo "Packaging index Lambda function..."
+      - cd lambda-functions/index
+      - zip -r ../../index.zip *
+      - echo "Index Lambda function packaged."
+
+      - echo "Packaging search Lambda function..."
+      - cd ../search
+      - zip -r ../../search.zip *
+      - echo "Search Lambda function packaged."
+  post_build:
+    commands:
+      - echo "Updating original Lambda functions..."
+      - echo "Moving to root directory to locate ZIP files..."
+      - cd ../..
+
+      # Update Lambda function code
+      - aws lambda update-function-code --function-name LF1_A3 --zip-file fileb://index.zip
+      - aws lambda update-function-code --function-name LF2_A3 --zip-file fileb://search.zip
+
+      # Explicitly set the correct handler for each Lambda function
+      - aws lambda update-function-configuration --function-name LF1_A3 --handler "LF1_A3.lambda_handler"
+      - aws lambda update-function-configuration --function-name LF2_A3 --handler "LF2_A3.lambda_handler"
+
+      - echo "Original Lambda functions updated successfully."
